@@ -7,10 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EditableSelect } from "@/components/EditableSelect";
 import { toast } from "sonner";
+
+// 預設設計師名單
+const SALES_DESIGNERS = ["楊總監", "林淑娟", "李亮華", "徐秀雲", "徐淑芬", "黃資文", "昀真", "紫郁", "桂玲"];
+const DRAWING_DESIGNERS = ["奕彰", "珮瑜", "允柔", "仁杰", "玟瑾", "宜庭", "馥瑄", "姵姍", "資蘋", "學彰"];
 
 export default function CreateMeeting() {
   const [, setLocation] = useLocation();
+  const [salesDesigner, setSalesDesigner] = useState("");
+  const [drawingDesigner, setDrawingDesigner] = useState("");
   const [formData, setFormData] = useState({
     clientName: "",
     clientContact: "",
@@ -24,9 +31,9 @@ export default function CreateMeeting() {
   });
 
   const createMutation = trpc.meetings.create.useMutation({
-    onSuccess: () => {
-      toast.success("洽談記錄已建立");
-      setLocation("/meetings");
+    onSuccess: ({ meetingId }) => {
+      toast.success("洽談記錄已建立，AI 分析進行中...");
+      setLocation(`/meetings/${meetingId}`);
     },
     onError: (error) => {
       toast.error("建立失敗：" + error.message);
@@ -36,6 +43,8 @@ export default function CreateMeeting() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate({
+      salesDesigner: salesDesigner || undefined,
+      drawingDesigner: drawingDesigner || undefined,
       ...formData,
       clientBudget: formData.clientBudget ? parseInt(formData.clientBudget) : undefined,
       meetingDate: new Date(formData.meetingDate),
@@ -49,10 +58,40 @@ export default function CreateMeeting() {
         <p className="text-muted-foreground mt-2">記錄與客戶的洽談內容</p>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>基本資訊</CardTitle>
+            <CardTitle>設計師資訊</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>業務設計師</Label>
+                <EditableSelect
+                  value={salesDesigner}
+                  onChange={setSalesDesigner}
+                  options={SALES_DESIGNERS}
+                  placeholder="選擇或輸入業務設計師"
+                  emptyText="按 Enter 新增設計師"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>繪圖設計師</Label>
+                <EditableSelect
+                  value={drawingDesigner}
+                  onChange={setDrawingDesigner}
+                  options={DRAWING_DESIGNERS}
+                  placeholder="選擇或輸入繪圖設計師"
+                  emptyText="按 Enter 新增設計師"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>客戶資訊</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

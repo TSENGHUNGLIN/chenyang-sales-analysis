@@ -27,6 +27,8 @@ export const meetings = mysqlTable("meetings", {
   id: int("id").autoincrement().primaryKey(),
   salespersonId: int("salespersonId").notNull(), // 業務人員 ID
   salespersonName: varchar("salespersonName", { length: 100 }).notNull(),
+  salesDesigner: varchar("salesDesigner", { length: 100 }), // 業務設計師
+  drawingDesigner: varchar("drawingDesigner", { length: 100 }), // 繪圖設計師
   clientName: varchar("clientName", { length: 100 }).notNull(), // 客戶姓名
   clientContact: varchar("clientContact", { length: 100 }), // 客戶聯絡方式
   clientBudget: int("clientBudget"), // 客戶預算（元）

@@ -55,6 +55,8 @@ export const appRouter = router({
   meetings: router({
     create: protectedProcedure
       .input(z.object({
+        salesDesigner: z.string().optional(),
+        drawingDesigner: z.string().optional(),
         clientName: z.string(),
         clientContact: z.string().optional(),
         clientBudget: z.number().optional(),
