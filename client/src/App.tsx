@@ -4,32 +4,94 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+import DashboardLayout from "./components/DashboardLayout";
+import Dashboard from "./pages/Dashboard";
+import Meetings from "./pages/Meetings";
+import MeetingDetail from "./pages/MeetingDetail";
+import CreateMeeting from "./pages/CreateMeeting";
+import Evaluations from "./pages/Evaluations";
+import CreateEvaluation from "./pages/CreateEvaluation";
+import Statistics from "./pages/Statistics";
+import FailedCases from "./pages/FailedCases";
+import Users from "./pages/Users";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
+      <Route path="/dashboard">
+        <DashboardLayout>
+          <Dashboard />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/meetings">
+        <DashboardLayout>
+          <Meetings />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/meetings/new">
+        <DashboardLayout>
+          <CreateMeeting />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/meetings/:id">
+        {(params) => (
+          <DashboardLayout>
+            <MeetingDetail id={parseInt(params.id)} />
+          </DashboardLayout>
+        )}
+      </Route>
+      
+      <Route path="/evaluations">
+        <DashboardLayout>
+          <Evaluations />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/evaluations/new/:meetingId">
+        {(params) => (
+          <DashboardLayout>
+            <CreateEvaluation meetingId={parseInt(params.meetingId)} />
+          </DashboardLayout>
+        )}
+      </Route>
+      
+      <Route path="/statistics">
+        <DashboardLayout>
+          <Statistics />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/failed-cases">
+        <DashboardLayout>
+          <FailedCases />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/users">
+        <DashboardLayout>
+          <Users />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/">
+        <DashboardLayout>
+          <Dashboard />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
           <Router />
@@ -40,3 +102,4 @@ function App() {
 }
 
 export default App;
+
