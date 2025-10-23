@@ -126,6 +126,13 @@ export const appRouter = router({
         await db.updateMeetingStatus(input.id, input.status);
         return { success: true };
       }),
+    
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteMeeting(input.id);
+        return { success: true };
+      }),
   }),
 
   // 評分管理

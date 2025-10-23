@@ -1,17 +1,48 @@
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowLeft, Trash2 } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface MeetingDetailProps {
   id: number;
 }
 
 export default function MeetingDetail({ id }: MeetingDetailProps) {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
   const { data: meeting, isLoading } = trpc.meetings.get.useQuery({ id });
   const { data: evaluation } = trpc.evaluations.getByMeetingId.useQuery({ meetingId: id });
   const { data: aiAnalysis } = trpc.aiAnalysis.getByMeetingId.useQuery({ meetingId: id });
+  
+  const deleteMutation = trpc.meetings.delete.useMutation({
+    onSuccess: () => {
+      toast.success("刪除成功");
+      setLocation("/meetings");
+    },
+    onError: (error) => {
+      toast.error(`刪除失敗：${error.message}`);
+    },
+  });
+  
+  const handleDelete = () => {
+    deleteMutation.mutate({ id });
+  };
 
   if (isLoading) return <div>載入中...</div>;
   if (!meeting) return <div>找不到記錄</div>;
@@ -32,19 +63,53 @@ export default function MeetingDetail({ id }: MeetingDetailProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/meetings">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold">{meeting.projectName}</h1>
-          <p className="text-muted-foreground mt-1">
-            {stageLabels[meeting.meetingStage]} · {statusLabels[meeting.caseStatus]}
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/meetings">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">{meeting.projectName}</h1>
+            <p className="text-muted-foreground mt-1">
+              {stageLabels[meeting.meetingStage]} · {statusLabels[meeting.caseStatus]}
+            </p>
+          </div>
         </div>
+        
+        {user?.role === "admin" && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowDeleteDialog(true)}
+            disabled={deleteMutation.isPending}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            刪除記錄
+          </Button>
+        )}
       </div>
+      
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>確認刪除</AlertDialogTitle>
+            <AlertDialogDescription>
+              確定要刪除「{meeting.projectName}」的洽談記錄嗎？此操作無法復原，將同時刪除相關的評分、AI 分析和失敗案件記錄。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              確認刪除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

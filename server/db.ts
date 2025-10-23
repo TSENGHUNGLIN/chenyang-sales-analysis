@@ -143,6 +143,19 @@ export async function updateMeetingStatus(id: number, status: "in_progress" | "s
   await db.update(meetings).set({ caseStatus: status }).where(eq(meetings.id, id));
 }
 
+export async function deleteMeeting(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 級聯刪除：先刪除相關的評分、AI 分析和失敗案件記錄
+  await db.delete(evaluations).where(eq(evaluations.meetingId, id));
+  await db.delete(aiAnalysis).where(eq(aiAnalysis.meetingId, id));
+  await db.delete(failedCases).where(eq(failedCases.meetingId, id));
+  
+  // 最後刪除洽談記錄本身
+  await db.delete(meetings).where(eq(meetings.id, id));
+}
+
 // ==================== 評分相關 ====================
 
 export async function createEvaluation(evaluation: InsertEvaluation) {
