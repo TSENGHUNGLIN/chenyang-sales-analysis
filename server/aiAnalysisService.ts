@@ -5,6 +5,49 @@ import type { Message } from "./_core/llm";
  * AI 分析服務 - 使用 Google Gemini 進行洽談內容分析
  */
 
+/**
+ * AI 建議建案名稱
+ */
+export async function suggestProjectName(transcriptText: string): Promise<string> {
+  const systemPrompt = `你是一位專業的室內設計業務助理，擅長根據洽談內容生成簡潔有意義的建案名稱。
+
+命名原則：
+1. 優先提取客戶提到的地點（區域、街道、大樓名稱）
+2. 結合案件類型（住宅、商業、辦公室、豪宅等）
+3. 如果有明顯特徵（如房型、風格）可以加入
+4. 保持簡潔，6-15 個中文字
+5. 不要加「案」字，直接命名
+
+範例：
+- "信義區豪宅"
+- "板橋新成屋"
+- "內湖三房裝修"
+- "南港辦公室"
+- "大安區老屋翻新"
+
+請只回傳建案名稱，不要有任何其他說明文字。`;
+
+  const userPrompt = `請根據以下洽談內容，生成一個簡潔的建案名稱：
+
+${transcriptText}`;
+
+  try {
+    const messages: Message[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ];
+
+    const response = await invokeLLM({ messages });
+    const content = response.choices[0]?.message?.content;
+    const projectName = (typeof content === 'string' ? content.trim() : "未命名建案") || "未命名建案";
+    
+    return projectName;
+  } catch (error) {
+    console.error("AI 建議建案名稱失敗:", error);
+    return "未命名建案";
+  }
+}
+
 interface AnalysisResult {
   keywords: string[];
   sentimentOverall: "positive" | "neutral" | "negative";

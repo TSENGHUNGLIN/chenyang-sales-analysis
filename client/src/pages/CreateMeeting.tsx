@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EditableSelect } from "@/components/EditableSelect";
 import { toast } from "sonner";
+import { Sparkles, Loader2 } from "lucide-react";
 
 // 預設設計師名單
 const SALES_DESIGNERS = ["楊總監", "林淑娟", "李亮華", "徐秀雲", "徐淑芬", "黃資文", "昀真", "紫郁", "桂玲"];
@@ -18,6 +19,7 @@ export default function CreateMeeting() {
   const [, setLocation] = useLocation();
   const [salesDesigner, setSalesDesigner] = useState("");
   const [drawingDesigner, setDrawingDesigner] = useState("");
+  const [isGeneratingName, setIsGeneratingName] = useState(false);
   const [formData, setFormData] = useState({
     projectName: "",
     clientName: "",
@@ -31,6 +33,18 @@ export default function CreateMeeting() {
     notes: "",
   });
 
+  const suggestNameMutation = trpc.meetings.suggestProjectName.useMutation({
+    onSuccess: ({ projectName }) => {
+      setFormData({ ...formData, projectName });
+      toast.success(`AI 建議：${projectName}`);
+      setIsGeneratingName(false);
+    },
+    onError: (error) => {
+      toast.error("生成失敗：" + error.message);
+      setIsGeneratingName(false);
+    },
+  });
+
   const createMutation = trpc.meetings.create.useMutation({
     onSuccess: ({ meetingId }) => {
       toast.success("洽談記錄已建立，AI 分析進行中...");
@@ -40,6 +54,15 @@ export default function CreateMeeting() {
       toast.error("建立失敗：" + error.message);
     },
   });
+
+  const handleAISuggest = () => {
+    if (!formData.transcriptText.trim()) {
+      toast.error("請先填寫洽談內容");
+      return;
+    }
+    setIsGeneratingName(true);
+    suggestNameMutation.mutate({ transcriptText: formData.transcriptText });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,11 +120,33 @@ export default function CreateMeeting() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="projectName">建案名稱 *</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="projectName">建案名稱 *</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAISuggest}
+                    disabled={isGeneratingName || !formData.transcriptText.trim()}
+                    className="h-7 text-xs"
+                  >
+                    {isGeneratingName ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        生成中...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        AI 建議
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <Input
                   id="projectName"
                   required
-                  placeholder="例：信義區豪宅案、板橋新案等"
+                  placeholder="例：信義區豪宅、板橋新成屋"
                   value={formData.projectName}
                   onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
                 />

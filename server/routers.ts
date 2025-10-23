@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
-import { analyzeMeetingTranscript, generateEvaluationSuggestion } from "./aiAnalysisService";
+import { analyzeMeetingTranscript, generateEvaluationSuggestion, suggestProjectName } from "./aiAnalysisService";
 
 // 管理員專用程序
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -108,6 +108,13 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await db.getMeeting(input.id);
+      }),
+    
+    suggestProjectName: protectedProcedure
+      .input(z.object({ transcriptText: z.string() }))
+      .mutation(async ({ input }) => {
+        const projectName = await suggestProjectName(input.transcriptText);
+        return { projectName };
       }),
     
     updateStatus: protectedProcedure
