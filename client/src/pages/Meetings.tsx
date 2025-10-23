@@ -32,7 +32,7 @@ export default function Meetings() {
   const filterOptions = useMemo(() => {
     if (!meetings) return { clients: [], salesDesigners: [], drawingDesigners: [] };
     
-    const clients = Array.from(new Set(meetings.map(m => m.projectName))).sort();
+    const clients = Array.from(new Set(meetings.map(m => m.projectName).filter(Boolean))).sort();
     const salesDesigners = Array.from(
       new Set(meetings.map(m => m.salesDesigner).filter(Boolean))
     ).sort() as string[];
