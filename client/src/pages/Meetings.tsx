@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HighlightText } from "@/components/HighlightText";
-import { Plus, Search } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Meetings() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedSalesDesigner, setSelectedSalesDesigner] = useState<string>("");
+  const [selectedDrawingDesigner, setSelectedDrawingDesigner] = useState<string>("");
+  
   const { data: meetings, isLoading } = trpc.meetings.list.useQuery();
 
   const stageLabels = {
@@ -25,19 +28,42 @@ export default function Meetings() {
     failed: "已失敗",
   };
 
+  // 提取所有唯一的客戶名稱、業務設計師、繪圖設計師
+  const filterOptions = useMemo(() => {
+    if (!meetings) return { clients: [], salesDesigners: [], drawingDesigners: [] };
+    
+    const clients = Array.from(new Set(meetings.map(m => m.clientName))).sort();
+    const salesDesigners = Array.from(
+      new Set(meetings.map(m => m.salesDesigner).filter(Boolean))
+    ).sort() as string[];
+    const drawingDesigners = Array.from(
+      new Set(meetings.map(m => m.drawingDesigner).filter(Boolean))
+    ).sort() as string[];
+    
+    return { clients, salesDesigners, drawingDesigners };
+  }, [meetings]);
+
   // 篩選洽談記錄
-  const filteredMeetings = meetings?.filter((meeting) => {
-    if (!searchTerm.trim()) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      meeting.clientName.toLowerCase().includes(term) ||
-      meeting.transcriptText.toLowerCase().includes(term) ||
-      (meeting.salesDesigner && meeting.salesDesigner.toLowerCase().includes(term)) ||
-      (meeting.drawingDesigner && meeting.drawingDesigner.toLowerCase().includes(term)) ||
-      (meeting.projectType && meeting.projectType.toLowerCase().includes(term)) ||
-      meeting.salespersonName.toLowerCase().includes(term)
-    );
-  });
+  const filteredMeetings = useMemo(() => {
+    if (!meetings) return [];
+    
+    return meetings.filter((meeting) => {
+      const matchClient = !selectedClient || meeting.clientName === selectedClient;
+      const matchSalesDesigner = !selectedSalesDesigner || meeting.salesDesigner === selectedSalesDesigner;
+      const matchDrawingDesigner = !selectedDrawingDesigner || meeting.drawingDesigner === selectedDrawingDesigner;
+      
+      return matchClient && matchSalesDesigner && matchDrawingDesigner;
+    });
+  }, [meetings, selectedClient, selectedSalesDesigner, selectedDrawingDesigner]);
+
+  // 清除所有篩選
+  const clearFilters = () => {
+    setSelectedClient("");
+    setSelectedSalesDesigner("");
+    setSelectedDrawingDesigner("");
+  };
+
+  const hasActiveFilters = selectedClient || selectedSalesDesigner || selectedDrawingDesigner;
 
   return (
     <div className="space-y-6">
@@ -54,42 +80,115 @@ export default function Meetings() {
         </Link>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="搜尋客戶、設計師、案件類型或洽談內容..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      {/* 篩選器 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">篩選條件</CardTitle>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="mr-2 h-4 w-4" />
+                清除篩選
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">專案名稱（客戶）</label>
+              <Select value={selectedClient} onValueChange={setSelectedClient}>
+                <SelectTrigger>
+                  <SelectValue placeholder="全部客戶" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">全部客戶</SelectItem>
+                  {filterOptions.clients.map((client) => (
+                    <SelectItem key={client} value={client}>
+                      {client}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">業務設計師</label>
+              <Select value={selectedSalesDesigner} onValueChange={setSelectedSalesDesigner}>
+                <SelectTrigger>
+                  <SelectValue placeholder="全部業務設計師" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">全部業務設計師</SelectItem>
+                  {filterOptions.salesDesigners.map((designer) => (
+                    <SelectItem key={designer} value={designer}>
+                      {designer}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">繪圖設計師</label>
+              <Select value={selectedDrawingDesigner} onValueChange={setSelectedDrawingDesigner}>
+                <SelectTrigger>
+                  <SelectValue placeholder="全部繪圖設計師" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">全部繪圖設計師</SelectItem>
+                  {filterOptions.drawingDesigners.map((designer) => (
+                    <SelectItem key={designer} value={designer}>
+                      {designer}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 篩選結果統計 */}
+      {hasActiveFilters && (
+        <div className="text-sm text-muted-foreground">
+          找到 {filteredMeetings.length} 筆符合條件的記錄
+        </div>
+      )}
+
+      {/* 洽談記錄列表 */}
       {isLoading ? (
         <div>載入中...</div>
-      ) : filteredMeetings && filteredMeetings.length === 0 ? (
+      ) : filteredMeetings.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
-            {searchTerm ? "沒有找到符合條件的洽談記錄" : "尚無洽談記錄"}
+            {hasActiveFilters ? "沒有找到符合條件的洽談記錄" : "尚無洽談記錄"}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filteredMeetings?.map((meeting) => (
+          {filteredMeetings.map((meeting) => (
             <Link key={meeting.id} href={`/meetings/${meeting.id}`}>
               <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle>
-                        <HighlightText text={meeting.clientName} searchTerm={searchTerm} />
+                        <HighlightText text={meeting.clientName} searchTerm={selectedClient} />
                       </CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">
-                        業務：<HighlightText text={meeting.salespersonName} searchTerm={searchTerm} />
+                        業務：{meeting.salespersonName}
                         {meeting.salesDesigner && (
-                          <> · 業務設計師：<HighlightText text={meeting.salesDesigner} searchTerm={searchTerm} /></>
+                          <>
+                            {" · 業務設計師："}
+                            <HighlightText text={meeting.salesDesigner} searchTerm={selectedSalesDesigner} />
+                          </>
                         )}
                         {meeting.drawingDesigner && (
-                          <> · 繪圖設計師：<HighlightText text={meeting.drawingDesigner} searchTerm={searchTerm} /></>
+                          <>
+                            {" · 繪圖設計師："}
+                            <HighlightText text={meeting.drawingDesigner} searchTerm={selectedDrawingDesigner} />
+                          </>
                         )}
                       </p>
                     </div>
@@ -118,7 +217,7 @@ export default function Meetings() {
                     {meeting.projectType && (
                       <div>
                         <span className="text-muted-foreground">案件類型：</span>
-                        <HighlightText text={meeting.projectType} searchTerm={searchTerm} />
+                        {meeting.projectType}
                       </div>
                     )}
                   </div>
