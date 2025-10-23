@@ -63,7 +63,7 @@ export function EditableSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="搜尋或輸入新名稱..."
             value={searchValue}
@@ -73,7 +73,11 @@ export function EditableSelect({
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
-              {options.map((option) => (
+              {options
+                .filter((option) => 
+                  !searchValue || option.toLowerCase().includes(searchValue.toLowerCase())
+                )
+                .map((option) => (
                 <CommandItem
                   key={option}
                   value={option}
