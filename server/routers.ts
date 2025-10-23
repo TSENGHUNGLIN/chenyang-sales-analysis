@@ -141,6 +141,17 @@ export const appRouter = router({
         await db.updateUserPassword(input.userId, newPasswordHash);
         return { success: true };
       }),
+    convertToPasswordLogin: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        username: z.string().regex(/^A\d{6}$/, "帳號格式應為 A000001"),
+        password: z.string().min(6, "密碼至少 6 位"),
+      }))
+      .mutation(async ({ input }) => {
+        const passwordHash = await bcrypt.hash(input.password, 10);
+        await db.convertToPasswordLogin(input.userId, input.username, passwordHash);
+        return { success: true };
+      }),
   }),
 
   // 洽談記錄管理

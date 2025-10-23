@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { UserPlus, Trash2, Key } from "lucide-react";
+import { UserPlus, Trash2, Key, RefreshCw } from "lucide-react";
 
 export default function Users() {
   const { data: users, isLoading } = trpc.users.list.useQuery();
@@ -25,6 +25,9 @@ export default function Users() {
   
   const [resetPasswordDialog, setResetPasswordDialog] = useState<{ open: boolean; userId: number | null; username: string }>({ open: false, userId: null, username: "" });
   const [newPassword, setNewPassword] = useState("");
+  
+  const [convertDialog, setConvertDialog] = useState<{ open: boolean; userId: number | null; name: string }>({ open: false, userId: null, name: "" });
+  const [convertForm, setConvertForm] = useState({ username: "", password: "" });
 
   const updateRoleMutation = trpc.users.updateRole.useMutation({
     onSuccess: () => {
@@ -73,6 +76,18 @@ export default function Users() {
     },
     onError: (error) => {
       toast.error("重設失敗：" + error.message);
+    },
+  });
+  
+  const convertMutation = trpc.users.convertToPasswordLogin.useMutation({
+    onSuccess: () => {
+      toast.success("已轉換為帳號密碼登入");
+      setConvertDialog({ open: false, userId: null, name: "" });
+      setConvertForm({ username: "", password: "" });
+      utils.users.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error("轉換失敗：" + error.message);
     },
   });
 
@@ -233,7 +248,7 @@ export default function Users() {
                         </SelectContent>
                       </Select>
                     </div>
-                    {user.loginMethod === "password" && (
+                    {user.loginMethod === "password" ? (
                       <>
                         <Button
                           variant="outline"
@@ -256,6 +271,18 @@ export default function Users() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setConvertDialog({ open: true, userId: user.id, name: user.name });
+                          setConvertForm({ username: "", password: "" });
+                        }}
+                        title="轉換為帳號密碼登入"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -343,6 +370,75 @@ export default function Users() {
               {resetPasswordMutation.isPending ? "重設中..." : "確認重設"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* 轉換為密碼登入對話框 */}
+      <Dialog open={convertDialog.open} onOpenChange={(open) => {
+        if (!open) {
+          setConvertDialog({ open: false, userId: null, name: "" });
+          setConvertForm({ username: "", password: "" });
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>轉換為帳號密碼登入</DialogTitle>
+            <DialogDescription>
+              將「{convertDialog.name}」轉換為帳號密碼登入方式
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (convertDialog.userId && convertForm.username && convertForm.password.length >= 6) {
+              convertMutation.mutate({
+                userId: convertDialog.userId,
+                username: convertForm.username,
+                password: convertForm.password,
+              });
+            } else {
+              toast.error("請填寫完整資料，密碼至少 6 位");
+            }
+          }}>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="convert-username">帳號 *</Label>
+                <Input
+                  id="convert-username"
+                  placeholder="A000001"
+                  value={convertForm.username}
+                  onChange={(e) => setConvertForm({ ...convertForm, username: e.target.value })}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">格式：A + 6位數字（如 A000001）</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="convert-password">密碼 *</Label>
+                <Input
+                  id="convert-password"
+                  type="password"
+                  placeholder="至少 6 位"
+                  value={convertForm.password}
+                  onChange={(e) => setConvertForm({ ...convertForm, password: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setConvertDialog({ open: false, userId: null, name: "" });
+                  setConvertForm({ username: "", password: "" });
+                }}
+              >
+                取消
+              </Button>
+              <Button type="submit" disabled={convertMutation.isPending}>
+                {convertMutation.isPending ? "轉換中..." : "確認轉換"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

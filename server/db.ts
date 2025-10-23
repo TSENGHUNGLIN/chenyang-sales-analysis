@@ -162,6 +162,24 @@ export async function updateUserPassword(userId: number, newPasswordHash: string
   await db.update(users).set({ passwordHash: newPasswordHash }).where(eq(users.id, userId));
 }
 
+export async function convertToPasswordLogin(userId: number, username: string, passwordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 檢查帳號是否已存在
+  const existing = await db.select().from(users).where(eq(users.username, username)).limit(1);
+  if (existing.length > 0 && existing[0].id !== userId) {
+    throw new Error("帳號已存在");
+  }
+  
+  // 更新使用者為帳號密碼登入
+  await db.update(users).set({
+    username,
+    passwordHash,
+    loginMethod: "password",
+  }).where(eq(users.id, userId));
+}
+
 // ==================== 洽談記錄相關 ====================
 
 export async function createMeeting(meeting: InsertMeeting) {
