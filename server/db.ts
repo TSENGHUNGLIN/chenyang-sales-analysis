@@ -107,6 +107,55 @@ export async function updateUserRole(userId: number, role: "admin" | "evaluator"
   await db.update(users).set({ role }).where(eq(users.id, userId));
 }
 
+export async function createPasswordUser(data: {
+  username: string;
+  passwordHash: string;
+  name: string;
+  email?: string;
+  role: "admin" | "evaluator" | "viewer" | "guest";
+  department?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 檢查帳號是否已存在
+  const existing = await db.select().from(users).where(eq(users.username, data.username)).limit(1);
+  if (existing.length > 0) {
+    throw new Error("帳號已存在");
+  }
+  
+  const result = await db.insert(users).values({
+    username: data.username,
+    passwordHash: data.passwordHash,
+    name: data.name,
+    email: data.email,
+    role: data.role,
+    department: data.department,
+    loginMethod: "password",
+  });
+  
+  return result[0].insertId;
+}
+
+export async function getUserByUsername(username: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function deleteUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(users).where(eq(users.id, userId));
+}
+
+export async function updateUserLastSignedIn(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
+}
+
 // ==================== 洽談記錄相關 ====================
 
 export async function createMeeting(meeting: InsertMeeting) {

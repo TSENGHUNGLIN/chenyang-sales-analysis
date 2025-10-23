@@ -6,6 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { analyzeMeetingTranscript, generateEvaluationSuggestion, suggestProjectName } from "./aiAnalysisService";
+import bcrypt from "bcrypt";
 
 // 管理員專用程序
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -33,6 +34,36 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    loginWithPassword: publicProcedure
+      .input(z.object({
+        username: z.string(),
+        password: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const user = await db.getUserByUsername(input.username);
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: '帳號或密碼錯誤' });
+        }
+        
+        const isValid = await bcrypt.compare(input.password, user.passwordHash);
+        if (!isValid) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: '帳號或密碼錯誤' });
+        }
+        
+        // 更新最後登入時間
+        await db.updateUserLastSignedIn(user.id);
+        
+        // 建立 Session（使用 username 作為 openId）
+        const { sdk } = ctx;
+        const sessionToken = await sdk.createSessionToken(`password:${user.username}`, {
+          name: user.name || user.username,
+        });
+        
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
+        
+        return { success: true, user };
+      }),
   }),
 
   // 使用者管理
@@ -47,6 +78,33 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         await db.updateUserRole(input.userId, input.role);
+        return { success: true };
+      }),
+    create: adminProcedure
+      .input(z.object({
+        username: z.string().regex(/^A\d{6}$/, "帳號格式應為 A000001"),
+        password: z.string().min(6, "密碼至少 6 位"),
+        name: z.string().min(1, "請輸入姓名"),
+        email: z.string().email().optional().or(z.literal("")),
+        role: z.enum(["admin", "evaluator", "viewer", "guest"]),
+        department: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const passwordHash = await bcrypt.hash(input.password, 10);
+        const userId = await db.createPasswordUser({
+          username: input.username,
+          passwordHash,
+          name: input.name,
+          email: input.email || undefined,
+          role: input.role,
+          department: input.department,
+        });
+        return { success: true, userId };
+      }),
+    delete: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteUser(input.userId);
         return { success: true };
       }),
   }),

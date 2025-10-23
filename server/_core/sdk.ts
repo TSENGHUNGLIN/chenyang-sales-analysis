@@ -268,6 +268,20 @@ class SDKServer {
 
     const sessionUserId = session.openId;
     const signedInAt = new Date();
+    
+    // 檢查是否為帳號密碼登入（openId 格式：password:A000001）
+    if (sessionUserId.startsWith("password:")) {
+      const username = sessionUserId.replace("password:", "");
+      const user = await db.getUserByUsername(username);
+      
+      if (!user) {
+        throw ForbiddenError("User not found");
+      }
+      
+      return user;
+    }
+    
+    // OAuth 登入流程
     let user = await db.getUser(sessionUserId);
 
     // If user not in DB, sync from OAuth server automatically
