@@ -56,6 +56,18 @@ export default function MeetingDetail({ id }: MeetingDetailProps) {
               <span className="text-sm text-muted-foreground">業務人員：</span>
               <span className="ml-2">{meeting.salespersonName}</span>
             </div>
+            {meeting.salesDesigner && (
+              <div>
+                <span className="text-sm text-muted-foreground">業務設計師：</span>
+                <span className="ml-2">{meeting.salesDesigner}</span>
+              </div>
+            )}
+            {meeting.drawingDesigner && (
+              <div>
+                <span className="text-sm text-muted-foreground">繪圖設計師：</span>
+                <span className="ml-2">{meeting.drawingDesigner}</span>
+              </div>
+            )}
             <div>
               <span className="text-sm text-muted-foreground">洽談日期：</span>
               <span className="ml-2">{new Date(meeting.meetingDate).toLocaleDateString("zh-TW")}</span>
