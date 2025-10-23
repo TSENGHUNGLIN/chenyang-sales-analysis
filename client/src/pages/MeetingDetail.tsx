@@ -39,7 +39,7 @@ export default function MeetingDetail({ id }: MeetingDetailProps) {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">{meeting.clientName}</h1>
+          <h1 className="text-3xl font-bold">{meeting.projectName}</h1>
           <p className="text-muted-foreground mt-1">
             {stageLabels[meeting.meetingStage]} · {statusLabels[meeting.caseStatus]}
           </p>
@@ -66,6 +66,12 @@ export default function MeetingDetail({ id }: MeetingDetailProps) {
               <div>
                 <span className="text-sm text-muted-foreground">繪圖設計師：</span>
                 <span className="ml-2">{meeting.drawingDesigner}</span>
+              </div>
+            )}
+            {meeting.clientName && (
+              <div>
+                <span className="text-sm text-muted-foreground">客戶姓名：</span>
+                <span className="ml-2">{meeting.clientName}</span>
               </div>
             )}
             <div>

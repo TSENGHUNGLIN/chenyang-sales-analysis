@@ -57,7 +57,8 @@ export const appRouter = router({
       .input(z.object({
         salesDesigner: z.string().optional(),
         drawingDesigner: z.string().optional(),
-        clientName: z.string(),
+        projectName: z.string(),
+        clientName: z.string().optional(),
         clientContact: z.string().optional(),
         clientBudget: z.number().optional(),
         projectType: z.string().optional(),

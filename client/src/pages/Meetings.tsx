@@ -28,11 +28,11 @@ export default function Meetings() {
     failed: "已失敗",
   };
 
-  // 提取所有唯一的客戶名稱、業務設計師、繪圖設計師
+  // 提取所有唯一的建案名稱、業務設計師、繪圖設計師
   const filterOptions = useMemo(() => {
     if (!meetings) return { clients: [], salesDesigners: [], drawingDesigners: [] };
     
-    const clients = Array.from(new Set(meetings.map(m => m.clientName))).sort();
+    const clients = Array.from(new Set(meetings.map(m => m.projectName))).sort();
     const salesDesigners = Array.from(
       new Set(meetings.map(m => m.salesDesigner).filter(Boolean))
     ).sort() as string[];
@@ -99,10 +99,10 @@ export default function Meetings() {
               <label className="text-sm font-medium">專案名稱（客戶）</label>
               <Select value={selectedClient} onValueChange={setSelectedClient}>
                 <SelectTrigger>
-                  <SelectValue placeholder="全部客戶" />
+                  <SelectValue placeholder="全部建案" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">全部客戶</SelectItem>
+                  <SelectItem value="__all__">全部建案</SelectItem>
                   {filterOptions.clients.map((client) => (
                     <SelectItem key={client} value={client}>
                       {client}
@@ -130,7 +130,7 @@ export default function Meetings() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">繪圖設計師</label>
+               <label className="text-sm font-medium">建案名稱</label>
               <Select value={selectedDrawingDesigner} onValueChange={setSelectedDrawingDesigner}>
                 <SelectTrigger>
                   <SelectValue placeholder="全部繪圖設計師" />
@@ -174,9 +174,10 @@ export default function Meetings() {
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle>
-                        <HighlightText text={meeting.clientName} searchTerm={selectedClient} />
+                        <HighlightText text={meeting.projectName} searchTerm={selectedClient} />
                       </CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">
+                        {meeting.clientName && `客戶：${meeting.clientName} · `}
                         業務：{meeting.salespersonName}
                         {meeting.salesDesigner && (
                           <>

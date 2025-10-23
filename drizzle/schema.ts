@@ -29,7 +29,8 @@ export const meetings = mysqlTable("meetings", {
   salespersonName: varchar("salespersonName", { length: 100 }).notNull(),
   salesDesigner: varchar("salesDesigner", { length: 100 }), // 業務設計師
   drawingDesigner: varchar("drawingDesigner", { length: 100 }), // 繪圖設計師
-  clientName: varchar("clientName", { length: 100 }).notNull(), // 客戶姓名
+  projectName: varchar("projectName", { length: 200 }).notNull(), // 建案名稱（專案名）
+  clientName: varchar("clientName", { length: 100 }), // 客戶姓名（選填）
   clientContact: varchar("clientContact", { length: 100 }), // 客戶聯絡方式
   clientBudget: int("clientBudget"), // 客戶預算（元）
   projectType: varchar("projectType", { length: 100 }), // 案件類型（住宅/商業/辦公室等）
@@ -56,9 +57,7 @@ export type InsertMeeting = typeof meetings.$inferInsert;
 export const evaluations = mysqlTable("evaluations", {
   id: int("id").autoincrement().primaryKey(),
   meetingId: int("meetingId").notNull(), // 關聯洽談記錄
-  evaluatorId: int("evaluatorId").notNull(), // 評分人員 ID
-  evaluatorName: varchar("evaluatorName", { length: 100 }).notNull(),
-  
+  evaluatorId: int("evaluatorId").notNull(), // 評分人員 ID  
   // 一、空間與使用者需求掌握（3項）
   score1: int("score1").notNull(), // 主動詢問並理解客戶的空間用途、家庭成員、生活習慣
   score2: int("score2").notNull(), // 耐心聆聽，針對需求提出追問

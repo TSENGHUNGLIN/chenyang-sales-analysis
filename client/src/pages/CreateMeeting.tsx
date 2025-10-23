@@ -19,6 +19,7 @@ export default function CreateMeeting() {
   const [salesDesigner, setSalesDesigner] = useState("");
   const [drawingDesigner, setDrawingDesigner] = useState("");
   const [formData, setFormData] = useState({
+    projectName: "",
     clientName: "",
     clientContact: "",
     clientBudget: "",
@@ -96,10 +97,19 @@ export default function CreateMeeting() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="clientName">客戶姓名 *</Label>
+                <Label htmlFor="projectName">建案名稱 *</Label>
+                <Input
+                  id="projectName"
+                  required
+                  placeholder="例：信義區豪宅案、板橋新案等"
+                  value={formData.projectName}
+                  onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientName">客戶姓名</Label>
                 <Input
                   id="clientName"
-                  required
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                 />
