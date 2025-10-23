@@ -385,7 +385,7 @@ export async function getSuccessRate() {
   return { total, success, failed, inProgress, successRate };
 }
 
-export async function getSalespersonPerformance(salespersonId: number) {
+export async function getSalespersonDetailPerformance(salespersonId: number) {
   const db = await getDb();
   if (!db) return { totalMeetings: 0, successCount: 0, failedCount: 0, successRate: 0, avgScore: 0 };
   

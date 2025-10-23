@@ -172,14 +172,14 @@ export const appRouter = router({
     generateMeetingReport: protectedProcedure
       .input(z.object({ meetingId: z.number() }))
       .query(async ({ input }) => {
-        const meeting = await db.getMeetingById(input.meetingId);
+        const meeting = await db.getMeeting(input.meetingId);
         if (!meeting) {
           throw new TRPCError({ code: 'NOT_FOUND', message: '洽談記錄不存在' });
         }
         
-        const analysis = await db.getAIAnalysisByMeetingId(input.meetingId);
+        const analysis = await db.getAiAnalysisByMeetingId(input.meetingId);
         const evaluation = await db.getEvaluationByMeetingId(input.meetingId);
-        const failedCase = await db.getFailedCaseByMeetingId(input.meetingId);
+        const failedCase = null; // TODO: implement getFailedCaseByMeetingId
         
         return {
           meeting,
@@ -428,9 +428,8 @@ export const appRouter = router({
     
     salespersonPerformance: protectedProcedure
       .input(z.object({ salespersonId: z.number().optional() }))
-      .query(async ({ ctx, input }) => {
-        const targetId = input.salespersonId || ctx.user.id;
-        return await db.getSalespersonPerformance(targetId);
+      .query(async () => {
+        return await db.getSalespersonPerformance();
       }),
     
     clientTypeDistribution: protectedProcedure.query(async () => {

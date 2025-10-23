@@ -276,7 +276,7 @@ export default function Users() {
                         variant="outline"
                         size="icon"
                         onClick={() => {
-                          setConvertDialog({ open: true, userId: user.id, name: user.name });
+                          setConvertDialog({ open: true, userId: user.id, name: user.name || "" });
                           setConvertForm({ username: "", password: "" });
                         }}
                         title="轉換為帳號密碼登入"
