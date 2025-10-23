@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, FileText, ClipboardList, TrendingUp, XCircle, Key } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, FileText, ClipboardList, TrendingUp, XCircle, Key, PieChart } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -38,6 +38,7 @@ const menuItems = [
   { icon: FileText, label: "洽談記錄", path: "/meetings", roles: ["admin", "evaluator", "salesperson"] },
   { icon: ClipboardList, label: "評分管理", path: "/evaluations", roles: ["admin", "evaluator"] },
   { icon: TrendingUp, label: "統計分析", path: "/statistics", roles: ["admin", "evaluator"] },
+  { icon: PieChart, label: "資料分析", path: "/analytics", roles: ["admin", "evaluator"] },
   { icon: XCircle, label: "失敗案件", path: "/failed-cases", roles: ["admin", "evaluator", "salesperson"] },
   { icon: Users, label: "使用者管理", path: "/users", roles: ["admin"] },
 ];

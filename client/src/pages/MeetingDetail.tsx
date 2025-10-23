@@ -1,7 +1,8 @@
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, FileDown } from "lucide-react";
+import jsPDF from 'jspdf';
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useState } from "react";
@@ -43,6 +44,93 @@ export default function MeetingDetail({ id }: MeetingDetailProps) {
   const handleDelete = () => {
     deleteMutation.mutate({ id });
   };
+  
+  const handleExportPDF = async () => {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 15;
+    let yPos = margin;
+    
+    // 標題
+    pdf.setFontSize(20);
+    pdf.text('洽談記錄報告', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 15;
+    
+    // 基本資訊
+    pdf.setFontSize(14);
+    pdf.text('基本資訊', margin, yPos);
+    yPos += 8;
+    
+    pdf.setFontSize(10);
+    const basicInfo = [
+      `\u5efa\u6848\u540d\u7a31: ${meeting.projectName}`,
+      `\u696d\u52d9\u4eba\u54e1: ${meeting.salespersonName}`,
+      `\u6d3d\u8ac7\u968e\u6bb5: ${stageLabels[meeting.meetingStage]}`,
+      `\u6848\u4ef6\u72c0\u614b: ${statusLabels[meeting.caseStatus]}`,
+      `\u6d3d\u8ac7\u65e5\u671f: ${new Date(meeting.meetingDate).toLocaleDateString('zh-TW')}`,
+    ];
+    
+    if (meeting.clientName) basicInfo.push(`\u5ba2\u6236\u59d3\u540d: ${meeting.clientName}`);
+    if (meeting.clientContact) basicInfo.push(`\u806f\u7d61\u65b9\u5f0f: ${meeting.clientContact}`);
+    if (meeting.clientBudget) basicInfo.push(`\u5ba2\u6236\u9810\u7b97: ${meeting.clientBudget.toLocaleString()} \u5143`);
+    
+    basicInfo.forEach(line => {
+      pdf.text(line, margin, yPos);
+      yPos += 6;
+    });
+    
+    // AI 分析
+    if (aiAnalysis) {
+      yPos += 5;
+      pdf.setFontSize(14);
+      pdf.text('AI \u5206\u6790\u7d50\u679c', margin, yPos);
+      yPos += 8;
+      
+      pdf.setFontSize(10);
+      const analysisLines = aiAnalysis.analysisResult.split('\n');
+      analysisLines.forEach(line => {
+        if (yPos > pageHeight - margin) {
+          pdf.addPage();
+          yPos = margin;
+        }
+        pdf.text(line, margin, yPos, { maxWidth: pageWidth - 2 * margin });
+        yPos += 6;
+      });
+    }
+    
+    // 評分結果
+    if (evaluation) {
+      if (yPos > pageHeight - 50) {
+        pdf.addPage();
+        yPos = margin;
+      }
+      
+      yPos += 5;
+      pdf.setFontSize(14);
+      pdf.text('\u8a55\u5206\u7d50\u679c', margin, yPos);
+      yPos += 8;
+      
+      pdf.setFontSize(10);
+      const scores = [
+        evaluation.q1Score, evaluation.q2Score, evaluation.q3Score, evaluation.q4Score,
+        evaluation.q5Score, evaluation.q6Score, evaluation.q7Score, evaluation.q8Score,
+        evaluation.q9Score, evaluation.q10Score, evaluation.q11Score, evaluation.q12Score,
+        evaluation.q13Score, evaluation.q14Score, evaluation.q15Score, evaluation.q16Score,
+        evaluation.q17Score, evaluation.q18Score, evaluation.q19Score, evaluation.q20Score,
+      ];
+      const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      pdf.text(`\u5e73\u5747\u5206\u6578: ${avgScore.toFixed(1)} / 5.0`, margin, yPos);
+      yPos += 6;
+      pdf.text(`\u8a55\u5206\u4eba\u54e1: ${evaluation.evaluatorName}`, margin, yPos);
+      yPos += 6;
+      pdf.text(`\u8a55\u5206\u65e5\u671f: ${new Date(evaluation.evaluatedAt).toLocaleDateString('zh-TW')}`, margin, yPos);
+    }
+    
+    // 保存 PDF
+    pdf.save(`${meeting.projectName}_\u5831\u544a.pdf`);
+    toast.success('PDF \u5831\u544a\u5df2\u751f\u6210');
+  };
 
   if (isLoading) return <div>載入中...</div>;
   if (!meeting) return <div>找不到記錄</div>;
@@ -76,6 +164,18 @@ export default function MeetingDetail({ id }: MeetingDetailProps) {
               {stageLabels[meeting.meetingStage]} · {statusLabels[meeting.caseStatus]}
             </p>
           </div>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleExportPDF} variant="outline">
+            <FileDown className="mr-2 h-4 w-4" />
+            輸出 PDF
+          </Button>
+          {user?.role === 'admin' && (
+            <Button onClick={() => setShowDeleteDialog(true)} variant="destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              刪除記錄
+            </Button>
+          )}
         </div>
         
         {user?.role === "admin" && (

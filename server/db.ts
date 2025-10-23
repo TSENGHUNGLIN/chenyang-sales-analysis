@@ -180,6 +180,85 @@ export async function convertToPasswordLogin(userId: number, username: string, p
   }).where(eq(users.id, userId));
 }
 
+// ==================== 統計分析相關 ====================
+
+export async function getStatistics() {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // 案件狀態統計
+  const caseStatusStats = await db.select({
+    status: meetings.caseStatus,
+    count: sql<number>`count(*)`
+  })
+  .from(meetings)
+  .groupBy(meetings.caseStatus);
+  
+  // 洽談階段統計
+  const meetingStageStats = await db.select({
+    stage: meetings.meetingStage,
+    count: sql<number>`count(*)`
+  })
+  .from(meetings)
+  .groupBy(meetings.meetingStage);
+  
+  // 評分統計（平均分）
+  const evaluationStats = await db.select({
+    avgScore: sql<number>`avg((
+      q1_score + q2_score + q3_score + q4_score + q5_score + 
+      q6_score + q7_score + q8_score + q9_score + q10_score + 
+      q11_score + q12_score + q13_score + q14_score + q15_score + 
+      q16_score + q17_score + q18_score + q19_score + q20_score
+    ) / 20)`,
+    count: sql<number>`count(*)`
+  })
+  .from(evaluations);
+  
+  // 總案件數
+  const totalMeetings = await db.select({ count: sql<number>`count(*)` }).from(meetings);
+  
+  return {
+    caseStatusStats,
+    meetingStageStats,
+    evaluationStats: evaluationStats[0] || { avgScore: 0, count: 0 },
+    totalMeetings: totalMeetings[0]?.count || 0,
+  };
+}
+
+export async function getSalespersonPerformance() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const performance = await db.select({
+    salespersonId: meetings.salespersonId,
+    salespersonName: meetings.salespersonName,
+    totalCases: sql<number>`count(*)`,
+    successCases: sql<number>`sum(case when ${meetings.caseStatus} = 'success' then 1 else 0 end)`,
+    failedCases: sql<number>`sum(case when ${meetings.caseStatus} = 'failed' then 1 else 0 end)`,
+    inProgressCases: sql<number>`sum(case when ${meetings.caseStatus} = 'in_progress' then 1 else 0 end)`,
+  })
+  .from(meetings)
+  .groupBy(meetings.salespersonId, meetings.salespersonName);
+  
+  return performance;
+}
+
+export async function getMonthlyTrend() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const trend = await db.select({
+    month: sql<string>`DATE_FORMAT(${meetings.meetingDate}, '%Y-%m')`,
+    count: sql<number>`count(*)`,
+    successCount: sql<number>`sum(case when ${meetings.caseStatus} = 'success' then 1 else 0 end)`,
+  })
+  .from(meetings)
+  .groupBy(sql`DATE_FORMAT(${meetings.meetingDate}, '%Y-%m')`)
+  .orderBy(sql`DATE_FORMAT(${meetings.meetingDate}, '%Y-%m')`);
+  
+  return trend;
+}
+
 // ==================== 洽談記錄相關 ====================
 
 export async function createMeeting(meeting: InsertMeeting) {

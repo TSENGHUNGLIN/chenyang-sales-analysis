@@ -67,6 +67,19 @@ export const appRouter = router({
       }),
   }),
 
+  // 統計分析
+  analytics: router({
+    getStatistics: protectedProcedure.query(async () => {
+      return await db.getStatistics();
+    }),
+    getSalespersonPerformance: protectedProcedure.query(async () => {
+      return await db.getSalespersonPerformance();
+    }),
+    getMonthlyTrend: protectedProcedure.query(async () => {
+      return await db.getMonthlyTrend();
+    }),
+  }),
+
   // 使用者管理
   users: router({
     list: adminProcedure.query(async () => {
@@ -151,6 +164,29 @@ export const appRouter = router({
         const passwordHash = await bcrypt.hash(input.password, 10);
         await db.convertToPasswordLogin(input.userId, input.username, passwordHash);
         return { success: true };
+      }),
+  }),
+
+  // PDF 報告生成
+  reports: router({
+    generateMeetingReport: protectedProcedure
+      .input(z.object({ meetingId: z.number() }))
+      .query(async ({ input }) => {
+        const meeting = await db.getMeetingById(input.meetingId);
+        if (!meeting) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: '洽談記錄不存在' });
+        }
+        
+        const analysis = await db.getAIAnalysisByMeetingId(input.meetingId);
+        const evaluation = await db.getEvaluationByMeetingId(input.meetingId);
+        const failedCase = await db.getFailedCaseByMeetingId(input.meetingId);
+        
+        return {
+          meeting,
+          analysis,
+          evaluation,
+          failedCase,
+        };
       }),
   }),
 

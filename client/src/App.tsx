@@ -14,6 +14,7 @@ import CreateEvaluation from "./pages/CreateEvaluation";
 import Statistics from "./pages/Statistics";
 import FailedCases from "./pages/FailedCases";
 import Users from "./pages/Users";
+import Analytics from "./pages/Analytics";
 
 function Router() {
   return (
@@ -73,6 +74,12 @@ function Router() {
       <Route path="/users">
         <DashboardLayout>
           <Users />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/analytics">
+        <DashboardLayout>
+          <Analytics />
         </DashboardLayout>
       </Route>
       
