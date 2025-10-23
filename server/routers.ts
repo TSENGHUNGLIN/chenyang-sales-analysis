@@ -1,4 +1,4 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_HOUR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
@@ -57,10 +57,11 @@ export const appRouter = router({
         const { sdk } = ctx;
         const sessionToken = await sdk.createSessionToken(`password:${user.username}`, {
           name: user.name || user.username,
+          expiresInMs: ONE_HOUR_MS,
         });
         
         const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_HOUR_MS });
         
         return { success: true, user };
       }),

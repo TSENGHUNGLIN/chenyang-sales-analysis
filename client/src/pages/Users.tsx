@@ -16,7 +16,7 @@ export default function Users() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
-    password: "",
+    password: "test",
     name: "",
     email: "",
     role: "viewer" as "admin" | "evaluator" | "viewer" | "guest",
@@ -42,7 +42,7 @@ export default function Users() {
       setIsCreateDialogOpen(false);
       setFormData({
         username: "",
-        password: "",
+        password: "test",
         name: "",
         email: "",
         role: "viewer",
@@ -127,11 +127,12 @@ export default function Users() {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="至少 6 位"
+                    placeholder="預設：test"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">預設密碼為 "test"，使用者登入後可自行修改</p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="name">姓名 *</Label>
