@@ -80,7 +80,13 @@ export default function DashboardLayout({
         } as CSSProperties
       }
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+      <DashboardLayoutContent 
+        setSidebarWidth={setSidebarWidth}
+        changePasswordDialog={changePasswordDialog}
+        setChangePasswordDialog={setChangePasswordDialog}
+        passwordForm={passwordForm}
+        setPasswordForm={setPasswordForm}
+      >
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -90,11 +96,19 @@ export default function DashboardLayout({
 type DashboardLayoutContentProps = {
   children: React.ReactNode;
   setSidebarWidth: (width: number) => void;
+  changePasswordDialog: boolean;
+  setChangePasswordDialog: (open: boolean) => void;
+  passwordForm: { oldPassword: string; newPassword: string };
+  setPasswordForm: (form: { oldPassword: string; newPassword: string }) => void;
 };
 
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
+  changePasswordDialog,
+  setChangePasswordDialog,
+  passwordForm,
+  setPasswordForm,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
