@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
+import { Sparkles, Loader2 } from "lucide-react";
 
 interface CreateEvaluationProps {
   meetingId: number;
@@ -39,8 +40,27 @@ export default function CreateEvaluation({ meetingId }: CreateEvaluationProps) {
   const [, setLocation] = useLocation();
   const [scores, setScores] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
+  const [aiSuggestionsLoaded, setAiSuggestionsLoaded] = useState(false);
 
   const { data: meeting } = trpc.meetings.get.useQuery({ id: meetingId });
+  
+  const getSuggestionMutation = trpc.evaluations.getSuggestion.useMutation({
+    onSuccess: (suggestion) => {
+      setScores(suggestion);
+      setAiSuggestionsLoaded(true);
+      toast.success("已載入 AI 評分建議，您可以手動修改");
+    },
+    onError: (error) => {
+      toast.error(`獲取 AI 建議失敗：${error.message}`);
+    },
+  });
+  
+  // 自動載入 AI 評分建議
+  useEffect(() => {
+    if (meetingId && !aiSuggestionsLoaded && !getSuggestionMutation.isPending) {
+      getSuggestionMutation.mutate({ meetingId });
+    }
+  }, [meetingId]);
 
   const createMutation = trpc.evaluations.create.useMutation({
     onSuccess: () => {
@@ -98,10 +118,29 @@ export default function CreateEvaluation({ meetingId }: CreateEvaluationProps) {
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">評分表單</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">評分表單</h1>
+          {getSuggestionMutation.isPending && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              正在獲取 AI 建議...
+            </div>
+          )}
+          {aiSuggestionsLoaded && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <Sparkles className="h-4 w-4" />
+              AI 建議已載入
+            </div>
+          )}
+        </div>
         {meeting && (
           <p className="text-muted-foreground mt-2">
-            客戶：{meeting.clientName} · 業務：{meeting.salespersonName}
+            專案：{meeting.projectName}{meeting.clientName && ` · 客戶：${meeting.clientName}`}
+          </p>
+        )}
+        {aiSuggestionsLoaded && (
+          <p className="text-sm text-muted-foreground mt-1">
+            🤖 以下評分為 AI 自動生成的建議，您可以根據實際情況修改任何項目的評分。
           </p>
         )}
       </div>

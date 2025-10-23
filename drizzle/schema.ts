@@ -5,12 +5,14 @@ import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json } f
  */
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  openId: varchar("openId", { length: 64 }).unique(), // OAuth 登入用，帳號密碼登入時可為 null
+  username: varchar("username", { length: 50 }).unique(), // 帳號（如 A000001）
+  passwordHash: varchar("passwordHash", { length: 255 }), // 密碼雜湊值
   name: text("name"),
   email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  // 角色：admin(管理員), evaluator(評分人員), salesperson(業務人員), guest(訪客)
-  role: mysqlEnum("role", ["admin", "evaluator", "salesperson", "guest"]).default("salesperson").notNull(),
+  loginMethod: varchar("loginMethod", { length: 64 }), // oauth 或 password
+  // 角色：admin(管理員), evaluator(評分人員), viewer(閱讀者), guest(訪客)
+  role: mysqlEnum("role", ["admin", "evaluator", "viewer", "guest"]).default("viewer").notNull(),
   department: varchar("department", { length: 100 }), // 部門
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

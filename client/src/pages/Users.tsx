@@ -20,7 +20,7 @@ export default function Users() {
   const roleLabels = {
     admin: "管理員",
     evaluator: "評分人員",
-    salesperson: "管理人員",
+    viewer: "閱讀者",
     guest: "訪客",
   };
 
@@ -59,7 +59,7 @@ export default function Users() {
                       <SelectContent>
                         <SelectItem value="admin">管理員</SelectItem>
                         <SelectItem value="evaluator">評分人員</SelectItem>
-                        <SelectItem value="salesperson">管理人員</SelectItem>
+                        <SelectItem value="viewer">閱讀者</SelectItem>
                         <SelectItem value="guest">訪客</SelectItem>
                       </SelectContent>
                     </Select>

@@ -43,7 +43,7 @@ export const appRouter = router({
     updateRole: adminProcedure
       .input(z.object({
         userId: z.number(),
-        role: z.enum(["admin", "evaluator", "salesperson", "guest"]),
+        role: z.enum(["admin", "evaluator", "viewer", "guest"]),
       }))
       .mutation(async ({ input }) => {
         await db.updateUserRole(input.userId, input.role);
@@ -98,7 +98,7 @@ export const appRouter = router({
     
     list: protectedProcedure.query(async ({ ctx }) => {
       // 業務人員只能看自己的記錄，其他角色可以看全部
-      if (ctx.user.role === "salesperson") {
+      if (ctx.user.role === "viewer" || ctx.user.role === "guest") {
         return await db.getMeetingsBySalesperson(ctx.user.id);
       }
       return await db.getAllMeetings();
