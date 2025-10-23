@@ -52,10 +52,6 @@ export default function MeetingDetail({ id }: MeetingDetailProps) {
             <CardTitle>基本資訊</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div>
-              <span className="text-sm text-muted-foreground">管理人員：</span>
-              <span className="ml-2">{meeting.salespersonName}</span>
-            </div>
             {meeting.salesDesigner && (
               <div>
                 <span className="text-sm text-muted-foreground">業務設計師：</span>
