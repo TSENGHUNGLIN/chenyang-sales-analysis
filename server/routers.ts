@@ -171,7 +171,6 @@ export const appRouter = router({
         const evaluationId = await db.createEvaluation({
           meetingId: input.meetingId,
           evaluatorId: ctx.user.id,
-          evaluatorName: ctx.user.name || "未知",
           ...input.scores,
           totalScore,
           performanceLevel,

@@ -23,7 +23,7 @@ export default function Evaluations() {
                   <div>
                     <CardTitle>評分 #{evaluation.id}</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                      評分人員：{evaluation.evaluatorName}
+                      評分人員：ID {evaluation.evaluatorId}
                     </p>
                   </div>
                   <div className="text-right">
