@@ -8,9 +8,9 @@ import { Plus, X } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Meetings() {
-  const [selectedClient, setSelectedClient] = useState<string>("");
-  const [selectedSalesDesigner, setSelectedSalesDesigner] = useState<string>("");
-  const [selectedDrawingDesigner, setSelectedDrawingDesigner] = useState<string>("");
+  const [selectedClient, setSelectedClient] = useState<string>("__all__");
+  const [selectedSalesDesigner, setSelectedSalesDesigner] = useState<string>("__all__");
+  const [selectedDrawingDesigner, setSelectedDrawingDesigner] = useState<string>("__all__");
   
   const { data: meetings, isLoading } = trpc.meetings.list.useQuery();
 
@@ -48,9 +48,9 @@ export default function Meetings() {
     if (!meetings) return [];
     
     return meetings.filter((meeting) => {
-      const matchClient = !selectedClient || meeting.clientName === selectedClient;
-      const matchSalesDesigner = !selectedSalesDesigner || meeting.salesDesigner === selectedSalesDesigner;
-      const matchDrawingDesigner = !selectedDrawingDesigner || meeting.drawingDesigner === selectedDrawingDesigner;
+      const matchClient = selectedClient === "__all__" || meeting.clientName === selectedClient;
+      const matchSalesDesigner = selectedSalesDesigner === "__all__" || meeting.salesDesigner === selectedSalesDesigner;
+      const matchDrawingDesigner = selectedDrawingDesigner === "__all__" || meeting.drawingDesigner === selectedDrawingDesigner;
       
       return matchClient && matchSalesDesigner && matchDrawingDesigner;
     });
@@ -58,12 +58,12 @@ export default function Meetings() {
 
   // 清除所有篩選
   const clearFilters = () => {
-    setSelectedClient("");
-    setSelectedSalesDesigner("");
-    setSelectedDrawingDesigner("");
+    setSelectedClient("__all__");
+    setSelectedSalesDesigner("__all__");
+    setSelectedDrawingDesigner("__all__");
   };
 
-  const hasActiveFilters = selectedClient || selectedSalesDesigner || selectedDrawingDesigner;
+  const hasActiveFilters = selectedClient !== "__all__" || selectedSalesDesigner !== "__all__" || selectedDrawingDesigner !== "__all__";
 
   return (
     <div className="space-y-6">
@@ -102,7 +102,7 @@ export default function Meetings() {
                   <SelectValue placeholder="全部客戶" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">全部客戶</SelectItem>
+                  <SelectItem value="__all__">全部客戶</SelectItem>
                   {filterOptions.clients.map((client) => (
                     <SelectItem key={client} value={client}>
                       {client}
@@ -119,7 +119,7 @@ export default function Meetings() {
                   <SelectValue placeholder="全部業務設計師" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">全部業務設計師</SelectItem>
+                  <SelectItem value="__all__">全部業務設計師</SelectItem>
                   {filterOptions.salesDesigners.map((designer) => (
                     <SelectItem key={designer} value={designer}>
                       {designer}
@@ -136,7 +136,7 @@ export default function Meetings() {
                   <SelectValue placeholder="全部繪圖設計師" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">全部繪圖設計師</SelectItem>
+                  <SelectItem value="__all__">全部繪圖設計師</SelectItem>
                   {filterOptions.drawingDesigners.map((designer) => (
                     <SelectItem key={designer} value={designer}>
                       {designer}
