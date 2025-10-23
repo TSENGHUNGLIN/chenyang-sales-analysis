@@ -107,6 +107,39 @@ export const appRouter = router({
         await db.deleteUser(input.userId);
         return { success: true };
       }),
+    changePassword: protectedProcedure
+      .input(z.object({
+        oldPassword: z.string(),
+        newPassword: z.string().min(6, "密碼至少 6 位"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const user = ctx.user;
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: '無法修改密碼' });
+        }
+        
+        // 驗證舊密碼
+        const isValid = await bcrypt.compare(input.oldPassword, user.passwordHash);
+        if (!isValid) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: '舊密碼錯誤' });
+        }
+        
+        // 更新密碼
+        const newPasswordHash = await bcrypt.hash(input.newPassword, 10);
+        await db.updateUserPassword(user.id, newPasswordHash);
+        
+        return { success: true };
+      }),
+    resetPassword: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        newPassword: z.string().min(6, "密碼至少 6 位"),
+      }))
+      .mutation(async ({ input }) => {
+        const newPasswordHash = await bcrypt.hash(input.newPassword, 10);
+        await db.updateUserPassword(input.userId, newPasswordHash);
+        return { success: true };
+      }),
   }),
 
   // 洽談記錄管理

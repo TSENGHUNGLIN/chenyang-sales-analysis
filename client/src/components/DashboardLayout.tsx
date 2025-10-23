@@ -21,12 +21,17 @@ import {
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, FileText, ClipboardList, TrendingUp, XCircle } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, FileText, ClipboardList, TrendingUp, XCircle, Key } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import LoginPage from "./LoginPage";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "儀表板", path: "/dashboard", roles: ["admin", "evaluator", "salesperson"] },
@@ -52,6 +57,8 @@ export default function DashboardLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
+  const [changePasswordDialog, setChangePasswordDialog] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "" });
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -226,6 +233,15 @@ function DashboardLayoutContent({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                {user?.loginMethod === "password" && (
+                  <DropdownMenuItem
+                    onClick={() => setChangePasswordDialog(true)}
+                    className="cursor-pointer"
+                  >
+                    <Key className="mr-2 h-4 w-4" />
+                    <span>修改密碼</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
@@ -264,6 +280,96 @@ function DashboardLayoutContent({
         )}
         <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
+      
+      {/* 修改密碼對話框 */}
+      <ChangePasswordDialog
+        open={changePasswordDialog}
+        onOpenChange={setChangePasswordDialog}
+        passwordForm={passwordForm}
+        setPasswordForm={setPasswordForm}
+      />
     </>
+  );
+}
+
+function ChangePasswordDialog({
+  open,
+  onOpenChange,
+  passwordForm,
+  setPasswordForm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  passwordForm: { oldPassword: string; newPassword: string };
+  setPasswordForm: (form: { oldPassword: string; newPassword: string }) => void;
+}) {
+  const utils = trpc.useUtils();
+  
+  const changePasswordMutation = trpc.users.changePassword.useMutation({
+    onSuccess: () => {
+      toast.success("密碼已修改");
+      onOpenChange(false);
+      setPasswordForm({ oldPassword: "", newPassword: "" });
+    },
+    onError: (error) => {
+      toast.error("修改失敗：" + error.message);
+    },
+  });
+  
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>修改密碼</DialogTitle>
+          <DialogDescription>
+            請輸入舊密碼與新密碼
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="old-password">舊密碼</Label>
+            <Input
+              id="old-password"
+              type="password"
+              value={passwordForm.oldPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="new-password-change">新密碼</Label>
+            <Input
+              id="new-password-change"
+              type="password"
+              placeholder="至少 6 位"
+              value={passwordForm.newPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              onOpenChange(false);
+              setPasswordForm({ oldPassword: "", newPassword: "" });
+            }}
+          >
+            取消
+          </Button>
+          <Button
+            onClick={() => {
+              if (passwordForm.newPassword.length < 6) {
+                toast.error("密碼至少 6 位");
+                return;
+              }
+              changePasswordMutation.mutate(passwordForm);
+            }}
+            disabled={changePasswordMutation.isPending}
+          >
+            {changePasswordMutation.isPending ? "修改中..." : "確認修改"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

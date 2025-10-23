@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { UserPlus, Trash2 } from "lucide-react";
+import { UserPlus, Trash2, Key } from "lucide-react";
 
 export default function Users() {
   const { data: users, isLoading } = trpc.users.list.useQuery();
@@ -22,6 +22,9 @@ export default function Users() {
     role: "viewer" as "admin" | "evaluator" | "viewer" | "guest",
     department: "",
   });
+  
+  const [resetPasswordDialog, setResetPasswordDialog] = useState<{ open: boolean; userId: number | null; username: string }>({ open: false, userId: null, username: "" });
+  const [newPassword, setNewPassword] = useState("");
 
   const updateRoleMutation = trpc.users.updateRole.useMutation({
     onSuccess: () => {
@@ -59,6 +62,17 @@ export default function Users() {
     },
     onError: (error) => {
       toast.error("刪除失敗：" + error.message);
+    },
+  });
+  
+  const resetPasswordMutation = trpc.users.resetPassword.useMutation({
+    onSuccess: () => {
+      toast.success("密碼已重設");
+      setResetPasswordDialog({ open: false, userId: null, username: "" });
+      setNewPassword("");
+    },
+    onError: (error) => {
+      toast.error("重設失敗：" + error.message);
     },
   });
 
@@ -219,17 +233,28 @@ export default function Users() {
                       </Select>
                     </div>
                     {user.loginMethod === "password" && (
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => {
-                          if (confirm(`確定要刪除帳號「${user.username}」嗎？此操作無法復原。`)) {
-                            deleteUserMutation.mutate({ userId: user.id });
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setResetPasswordDialog({ open: true, userId: user.id, username: user.username || "" });
+                          }}
+                        >
+                          <Key className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => {
+                            if (confirm(`確定要刪除帳號「${user.username}」嗎？此操作無法復原。`)) {
+                              deleteUserMutation.mutate({ userId: user.id });
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -264,6 +289,61 @@ export default function Users() {
           ))}
         </div>
       )}
+      
+      {/* 重設密碼對話框 */}
+      <Dialog open={resetPasswordDialog.open} onOpenChange={(open) => {
+        if (!open) {
+          setResetPasswordDialog({ open: false, userId: null, username: "" });
+          setNewPassword("");
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>重設密碼</DialogTitle>
+            <DialogDescription>
+              為帳號「{resetPasswordDialog.username}」設定新密碼
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="new-password">新密碼</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="至少 6 位"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResetPasswordDialog({ open: false, userId: null, username: "" });
+                setNewPassword("");
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={() => {
+                if (resetPasswordDialog.userId && newPassword.length >= 6) {
+                  resetPasswordMutation.mutate({
+                    userId: resetPasswordDialog.userId,
+                    newPassword,
+                  });
+                } else {
+                  toast.error("密碼至少 6 位");
+                }
+              }}
+              disabled={resetPasswordMutation.isPending}
+            >
+              {resetPasswordMutation.isPending ? "重設中..." : "確認重設"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
